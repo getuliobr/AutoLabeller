@@ -24,12 +24,9 @@ def verify_webhook_signature():
 def event_handler():
   octokit = Octokit(auth='installation', app_id=config['GITHUB']['APP_IDENTIFIER'], private_key=config['GITHUB']['PRIVATE_KEY'])
   payload = request.json
-  
-  print(payload)
 
   if payload['action'] != 'opened':
     return abort(400)
-
 
   repo = payload['repository']['name']
   owner = payload['repository']['owner']['login']
