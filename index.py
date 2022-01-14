@@ -1,6 +1,5 @@
 from octokit import Octokit
 
-from dotenv import dotenv_values
 from flask import Flask, request, abort
 import hmac, json
 from config import config
