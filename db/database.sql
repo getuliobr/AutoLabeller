@@ -16,5 +16,6 @@ CREATE TABLE IF NOT EXISTS "assigned"(
   "issue_id" integer NOT NULL,
   "user" varchar(256) NOT NULL,
   "created_at" timestamp,
-  "deleted_at" timestamp
+  "deleted_at" timestamp,
+  CONSTRAINT fk_issue FOREIGN KEY(issue_id) REFERENCES issues(issue_id)
 );
