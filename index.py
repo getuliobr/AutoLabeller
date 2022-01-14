@@ -24,16 +24,22 @@ def verify_webhook_signature():
 def event_handler():
   octokit = Octokit(auth='installation', app_id=config['GITHUB']['APP_IDENTIFIER'], private_key=config['GITHUB']['PRIVATE_KEY'])
   payload = request.json
+  
+  print(payload)
 
   if payload['action'] != 'opened':
     return abort(400)
 
+
   repo = payload['repository']['name']
   owner = payload['repository']['owner']['login']
   issue_number = payload['issue']['number']
+  issue_id = payload['issue']['id']
+  title = payload['issue']['title']
   body = payload['issue']['body']
+  author = payload['issue']['user']['login']
 
-  print(owner, issue_number, repo, body)
+  print(owner, issue_number, repo, body, author)
 
   octokit.issues.add_labels_to_an_issue(owner=owner, repo=repo, issue_number=issue_number, labels=["needs-response"])
   octokit.issues.create_comment(owner=owner, repo=repo, issue_number=issue_number, body="teste direto do python")
