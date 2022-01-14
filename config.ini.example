@@ -1,0 +1,7 @@
+[DEFAULT]
+PRIVATE=-----BEGIN RSA PRIVATE KEY-----
+ chave
+ chave
+ -----END RSA PRIVATE KEY-----
+APP_IDENTIFIER=exemplo
+WEBHOOK_SECRET=exemplo
