@@ -1,7 +1,13 @@
 [DEFAULT]
 PRIVATE=-----BEGIN RSA PRIVATE KEY-----
- chave
- chave
+ example
+ example
  -----END RSA PRIVATE KEY-----
-APP_IDENTIFIER=exemplo
-WEBHOOK_SECRET=exemplo
+APP_IDENTIFIER=example
+WEBHOOK_SECRET=example
+
+[DATABASE]
+HOST=localhost
+DB=autolabeller
+USER=example
+PASSWORD=example
