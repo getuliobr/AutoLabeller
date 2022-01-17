@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS "issues"(
   "title" varchar(256) NOT NULL,
   "author" varchar(256) NOT NULL,
   "body" text,
+  "status" varchar(16),
   "created_at" timestamp,
   "updated_at" timestamp,
   "deleted_at" timestamp

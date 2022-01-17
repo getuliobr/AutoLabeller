@@ -40,7 +40,7 @@ def event_handler():
 
   if action == 'opened':
     try:
-      sql = f"insert into issues(issue_id, issue_number, repo, \"owner\", title, author, body, created_at) values ({issue_id}, {issue_number}, '{repo}', '{owner}', '{title}', '{author}', {body}, current_timestamp)"
+      sql = f"insert into issues(issue_id, issue_number, repo, \"owner\", title, author, body, status, created_at) values ({issue_id}, {issue_number}, '{repo}', '{owner}', '{title}', '{author}', {body}, 'open', current_timestamp)"
       db.query(sql)
     except:
       return abort(500)
@@ -58,6 +58,18 @@ def event_handler():
     assignee = payload['assignee']['login']
     try:
       sql = f"update assigned set deleted_at = current_timestamp where issue_id = {issue_id} and \"user\" = '{assignee}'"
+      db.query(sql)
+    except:
+      return abort(500)
+  elif action == 'closed' or action == 'reopened':
+    try:
+      sql = f"update issues set status = '{action}', updated_at = current_timestamp where issue_id = {issue_id}"
+      db.query(sql)
+    except:
+      return abort(500)
+  elif action == 'deleted':
+    try:
+      sql = f"update issues set deleted_at = current_timestamp where issue_id = {issue_id}"
       db.query(sql)
     except:
       return abort(500)
