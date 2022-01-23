@@ -1,9 +1,14 @@
+from asyncio.windows_events import NULL
+from unittest import result
 from octokit import Octokit
 
 from flask import Flask, request, abort
 import hmac, json
 from config import config
 from database import Connection
+
+from sklearn.feature_extraction.text import TfidfVectorizer
+import numpy as np  
 
 app = Flask(__name__)
 db = Connection()
@@ -33,44 +38,67 @@ def event_handler():
   issue_id = payload['issue']['id']
   title = payload['issue']['title']
   body = payload['issue']['body']
-  body = f"'{body}'" if body else 'NULL'
   author = payload['issue']['user']['login']
 
   print(action)
 
   if action == 'opened':
     try:
-      sql = f"insert into issues(issue_id, issue_number, repo, \"owner\", title, author, body, status, created_at) values ({issue_id}, {issue_number}, '{repo}', '{owner}', '{title}', '{author}', {body}, 'open', current_timestamp)"
-      db.query(sql)
+      sql = f"insert into issues(issue_id, issue_number, repo, \"owner\", title, author, body, status, created_at) values (%s, %s, %s, %s, %s, %s, %s, 'open', current_timestamp)"
+      values = (issue_id, issue_number, repo, owner, title, author, body, )
+      db.write(sql, values)
+
+      if body:
+        sql = f"select issue_id, issue_number, repo, owner, body from issues where body is not null and deleted_at is null"
+        issues_data = db.read(sql)
+        issues_bodies = list(map(lambda x: str(x[4]), issues_data))
+
+        # https://stackoverflow.com/questions/8897593/how-to-compute-the-similarity-between-two-text-documents
+        tfidf = TfidfVectorizer().fit_transform(issues_bodies)
+        pairwise_similarity = tfidf * tfidf.T
+
+        arr = pairwise_similarity.toarray()
+        np.fill_diagonal(arr, np.nan)
+
+        input_idx = issues_bodies.index(body)
+        result_idx = np.nanargmax(arr[input_idx])
+
+        issue_data = issues_data[result_idx]
+
+        near_issue_id, near_issue_number, near_repo, near_owner, near_body = issue_data
+
+        octokit.issues.add_labels_to_an_issue(owner=owner, repo=repo, issue_number=issue_number, labels=["needs-response"])
+        octokit.issues.create_comment(owner=owner, repo=repo, issue_number=issue_number, body=f"Mais parecido: {near_body}\nLink: https://github.com/{near_owner}/{near_repo}/issues/{near_issue_number}#issue-{near_issue_id}")
     except:
       return abort(500)
-
-    octokit.issues.add_labels_to_an_issue(owner=owner, repo=repo, issue_number=issue_number, labels=["needs-response"])
-    octokit.issues.create_comment(owner=owner, repo=repo, issue_number=issue_number, body="teste direto do python")
   elif action == 'assigned':
     assignee = payload['assignee']['login']
     try:
-      sql = f"insert into assigned(issue_id,\"user\",created_at) values ({issue_id}, '{assignee}', current_timestamp)"
-      db.query(sql)
+      sql = f"insert into assigned(issue_id,\"user\",created_at) values (%s, %s, current_timestamp)"
+      values = (issue_id, assignee,)
+      db.write(sql, values)
     except:
       return abort(500)
   elif action == 'unassigned':
     assignee = payload['assignee']['login']
     try:
-      sql = f"update assigned set deleted_at = current_timestamp where issue_id = {issue_id} and \"user\" = '{assignee}'"
-      db.query(sql)
+      sql = f"update assigned set deleted_at = current_timestamp where issue_id = %s and \"user\" = %s"
+      values = (issue_id, assignee,)
+      db.write(sql, values)
     except:
       return abort(500)
   elif action == 'closed' or action == 'reopened':
     try:
-      sql = f"update issues set status = '{action}', updated_at = current_timestamp where issue_id = {issue_id}"
-      db.query(sql)
+      sql = f"update issues set status = %s, updated_at = current_timestamp where issue_id = %s"
+      values = (action, issue_id,)
+      db.write(sql, values)
     except:
       return abort(500)
   elif action == 'deleted':
     try:
-      sql = f"update issues set deleted_at = current_timestamp where issue_id = {issue_id}"
-      db.query(sql)
+      sql = f"update issues set deleted_at = current_timestamp where issue_id = %s"
+      values = (issue_id,)
+      db.write(sql, values)
     except:
       return abort(500)
   else:

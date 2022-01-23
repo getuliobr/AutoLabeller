@@ -10,16 +10,21 @@ class Connection():
       password=config['DATABASE']['PASSWORD']
     )
   
-  def query(self, query):
+  def write(self, query, values):
     try:
       cur = self.db.cursor()
-      cur.execute(query)
-      result = True
-      if 'SELECT' in query:
-        result = cur.fetchall()
-      cur.close()
+      cur.execute(query, values)
       self.db.commit()
-      return result
+      return True
     except Exception as e:
-      print(e)
+      self.db.rollback()
       return False
+
+  def read(self, sql):
+    try:
+      cur = self.db.cursor()
+      cur.execute(sql)
+      return cur.fetchall()
+    except:
+      return None
+
