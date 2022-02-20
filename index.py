@@ -44,23 +44,24 @@ def event_handler():
 
   if action == 'opened':
     try:
+      #TODO: change body to title
       sql = f"insert into issues(issue_id, issue_number, repo, \"owner\", title, author, body, status, created_at) values (%s, %s, %s, %s, %s, %s, %s, 'open', current_timestamp)"
       values = (issue_id, issue_number, repo, owner, title, author, body, )
       db.write(sql, values)
 
-      if body:
-        sql = f"select issue_id, issue_number, repo, owner, body from issues where body is not null and deleted_at is null"
+      if title:
+        sql = f"select issue_id, issue_number, repo, owner, title from issues where title is not null and deleted_at is null"
         issues_data = db.read(sql)
-        issues_bodies = list(map(lambda x: str(x[4]), issues_data))
+        issues_titles = list(map(lambda x: str(x[4]), issues_data))
 
         # https://stackoverflow.com/questions/8897593/how-to-compute-the-similarity-between-two-text-documents
-        tfidf = TfidfVectorizer().fit_transform(issues_bodies)
+        tfidf = TfidfVectorizer().fit_transform(issues_titles)
         pairwise_similarity = tfidf * tfidf.T
 
         arr = pairwise_similarity.toarray()
         np.fill_diagonal(arr, np.nan)
 
-        input_idx = issues_bodies.index(body)
+        input_idx = issues_titles.index(title)
         result_idx = np.nanargmax(arr[input_idx])
 
         issue_data = issues_data[result_idx]
