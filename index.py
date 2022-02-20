@@ -44,7 +44,7 @@ def event_handler():
 
   if action == 'opened':
     try:
-      #TODO: change body to title
+      #FIXME: fix no suggestion when nothing is similar
       sql = f"insert into issues(issue_id, issue_number, repo, \"owner\", title, author, body, status, created_at) values (%s, %s, %s, %s, %s, %s, %s, 'open', current_timestamp)"
       values = (issue_id, issue_number, repo, owner, title, author, body, )
       db.write(sql, values)
