@@ -66,10 +66,10 @@ def event_handler():
 
         issue_data = issues_data[result_idx]
 
-        near_issue_id, near_issue_number, near_repo, near_owner, near_body = issue_data
+        near_issue_id, near_issue_number, near_repo, near_owner, near_title = issue_data
 
         octokit.issues.add_labels_to_an_issue(owner=owner, repo=repo, issue_number=issue_number, labels=["needs-response"])
-        octokit.issues.create_comment(owner=owner, repo=repo, issue_number=issue_number, body=f"Mais parecido: {near_body}\nLink: https://github.com/{near_owner}/{near_repo}/issues/{near_issue_number}#issue-{near_issue_id}")
+        octokit.issues.create_comment(owner=owner, repo=repo, issue_number=issue_number, body=f"Titulo mais parecido: {near_title}\nNo repositorio {near_repo} o issue tem o numero: {near_issue_number}")
     except:
       return abort(500)
   elif action == 'assigned':
