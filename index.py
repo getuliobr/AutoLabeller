@@ -29,6 +29,7 @@ def verify_webhook_signature():
 @app.route('/event_handler', methods=['POST'])
 def event_handler():
   # test pull request event
+  # test 2
   octokit = Octokit(auth='installation', app_id=config['GITHUB']['APP_IDENTIFIER'], private_key=config['GITHUB']['PRIVATE_KEY'])
   payload = request.json
 
