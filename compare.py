@@ -1,16 +1,19 @@
 from cmath import nan
+from tkinter import SEPARATOR
 from octokit import Octokit
 
 import hmac, json, re
 from config import config
 from database import Connection
 
-from sklearn.feature_extraction.text import TfidfVectorizer
-import numpy as np  
+import numpy as np
+from compareAlgorithms.tfidf import *
 
 
 repo = ''
 owner = ''
+
+SEPARATOR = ';ç;'
 
 octokit = Octokit(auth='installation', app_id=config['GITHUB']['APP_IDENTIFIER'], private_key=config['GITHUB']['PRIVATE_KEY'])
 
@@ -38,32 +41,44 @@ last = len(corpus)
 
 
 corpus.append(None)
+medianOfMedians = []
 
 with open('out.csv','w+', encoding="utf-8") as f:
-  f.write('open-title;ç;open-number;ç;close-title;ç;similarity;ç;close-title;ç;similarity;ç;close-title;ç;similarity\n')
-  print(len(issuesList))
+  topN = 3
+  column = [0 for _ in range(topN)]
+  
+  f.write(f'open-title{SEPARATOR}open-number')
+  for i in range(topN):
+    f.write(f'{SEPARATOR}open-title-top{i+1}{SEPARATOR}open-number-top{i+1}')
+  f.write('\n')
+
   for issue in issuesList:
     title = issue['title']
     open_issue_number = issue['number']
     corpus[last] = title
 
-    tfidf = TfidfVectorizer().fit_transform(corpus)
-    pairwise_similarity = tfidf * tfidf.T
+    arr = lemmatization(corpus)
 
-    arr = pairwise_similarity.toarray()
-    np.fill_diagonal(arr, np.nan)
-
-    f.write(f'{title};ç;{open_issue_number}')
-    for i in range(3):
+    f.write(f'{title}{SEPARATOR}{open_issue_number}')
+    median = []
+    for i in range(topN):
       result_idx = np.nanargmax(arr[last])
       close_number = str(issues_data[result_idx][1])
       most_similar_title = corpus[result_idx]
       similarity = arr[last][result_idx]
-      if(similarity):
-        similarity = str(similarity).replace('.',',')[:8]
-        f.write(f';ç;{most_similar_title};ç;{similarity}')
+      if(similarity > 0.5):
+        median.append(similarity)
+        similarity = f"'{similarity}"
+        f.write(f'{SEPARATOR}{most_similar_title}{SEPARATOR}{similarity}')
+        column[i] += 1
       else:
-        f.write(f';ç;-;ç;0')
+        f.write(f'{SEPARATOR}-{SEPARATOR}0')
 
       arr[last][result_idx] = -1
     f.write('\n')
+    if(len(median)):
+      medianOfMedians.append(np.median(median))
+  f.write(f"Mediana das medianas{SEPARATOR}'{np.median(medianOfMedians)}")
+  for i in range(topN):
+    f.write(f"{SEPARATOR}Top {i+1}{SEPARATOR}{column[i]}")
+  f.write('\n')
