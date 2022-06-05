@@ -8,6 +8,7 @@ WEBHOOK_SECRET=example
 
 [DATABASE]
 HOST=localhost
+PORT=5432
 DB=autolabeller
 USER=example
 PASSWORD=example

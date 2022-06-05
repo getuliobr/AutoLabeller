@@ -5,6 +5,7 @@ class Connection():
   def __init__(self):
     self.db = psycopg2.connect(
       host=config['DATABASE']['HOST'],
+      port=config['DATABASE']['PORT'],
       database=config['DATABASE']['DB'],
       user=config['DATABASE']['USER'],
       password=config['DATABASE']['PASSWORD']
