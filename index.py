@@ -1,6 +1,6 @@
 from asyncio.windows_events import NULL
 from unittest import result
-from octokit import Octokit
+from github import Github, GithubIntegration
 
 from flask import Flask, request, abort
 import hmac, json
@@ -12,6 +12,14 @@ import numpy as np
 
 app = Flask(__name__)
 db = Connection()
+
+app_id = config['GITHUB']['APP_IDENTIFIER']
+app_key = config['GITHUB']['PRIVATE_KEY']
+
+git_integration = GithubIntegration(
+  app_id,
+  app_key
+)
 
 @app.before_request
 def verify_webhook_signature():
@@ -28,9 +36,6 @@ def verify_webhook_signature():
 
 @app.route('/event_handler', methods=['POST'])
 def event_handler():
-  # test pull request event
-  # test 2
-  octokit = Octokit(auth='installation', app_id=config['GITHUB']['APP_IDENTIFIER'], private_key=config['GITHUB']['PRIVATE_KEY'])
   payload = request.json
 
   action = payload['action']
@@ -42,7 +47,13 @@ def event_handler():
   body = payload['issue']['body']
   author = payload['issue']['user']['login']
 
-  print(action)
+  git_connection = Github(
+    login_or_token=git_integration.get_access_token(
+      git_integration.get_installation(owner, repo).id
+    ).token
+  )
+  repo = git_connection.get_repo(f"{owner}/{repo}")
+  issue = repo.get_issue(number=issue_number)
 
   if action == 'opened':
     try:
@@ -70,9 +81,10 @@ def event_handler():
 
         near_issue_id, near_issue_number, near_repo, near_owner, near_title = issue_data
 
-        octokit.issues.add_labels_to_an_issue(owner=owner, repo=repo, issue_number=issue_number, labels=["needs-response"])
-        octokit.issues.create_comment(owner=owner, repo=repo, issue_number=issue_number, body=f"Titulo mais parecido: {near_title}\nNo repositorio {near_repo} o issue tem o numero: {near_issue_number}")
-    except:
+        issue.add_labels_to_an_issue(owner=owner, repo=repo, issue_number=issue_number, labels=["needs-response"])
+        issue.create_comment(owner=owner, repo=repo, issue_number=issue_number, body=f"Titulo mais parecido: {near_title}\nNo repositorio {near_repo} o issue tem o numero: {near_issue_number}")
+    except Exception as e:
+      print(e)
       return abort(500)
   elif action == 'assigned':
     assignee = payload['assignee']['login']
