@@ -39,7 +39,7 @@ def event_handler():
   payload = request.json
 
   action = payload['action']
-  repo = payload['repository']['name']
+  repo_name = payload['repository']['name']
   owner = payload['repository']['owner']['login']
   issue_number = payload['issue']['number']
   issue_id = payload['issue']['id']
@@ -49,17 +49,17 @@ def event_handler():
 
   git_connection = Github(
     login_or_token=git_integration.get_access_token(
-      git_integration.get_installation(owner, repo).id
+      git_integration.get_installation(owner, repo_name).id
     ).token
   )
-  repo = git_connection.get_repo(f"{owner}/{repo}")
+  repo = git_connection.get_repo(f"{owner}/{repo_name}")
   issue = repo.get_issue(number=issue_number)
 
   if action == 'opened':
     try:
       #FIXME: fix no suggestion when nothing is similar
       sql = f"insert into issues(issue_id, issue_number, repo, \"owner\", title, author, body, status, created_at) values (%s, %s, %s, %s, %s, %s, %s, 'open', current_timestamp)"
-      values = (issue_id, issue_number, repo, owner, title, author, body, )
+      values = (issue_id, issue_number, repo_name, owner, title, author, body, )
       db.write(sql, values)
 
       if title:
@@ -73,7 +73,6 @@ def event_handler():
 
         arr = pairwise_similarity.toarray()
         np.fill_diagonal(arr, np.nan)
-
         input_idx = issues_titles.index(title)
         result_idx = np.nanargmax(arr[input_idx])
 
@@ -81,8 +80,8 @@ def event_handler():
 
         near_issue_id, near_issue_number, near_repo, near_owner, near_title = issue_data
 
-        issue.add_labels_to_an_issue(owner=owner, repo=repo, issue_number=issue_number, labels=["needs-response"])
-        issue.create_comment(owner=owner, repo=repo, issue_number=issue_number, body=f"Titulo mais parecido: {near_title}\nNo repositorio {near_repo} o issue tem o numero: {near_issue_number}")
+        issue.add_to_labels("needs-response")
+        issue.create_comment(f"Titulo mais parecido: {near_title}\nNo repositorio {near_repo} o issue tem o numero: {near_issue_number}")
     except Exception as e:
       print(e)
       return abort(500)
