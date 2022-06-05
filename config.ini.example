@@ -1,5 +1,5 @@
 [GITHUB]
-PRIVATE=-----BEGIN RSA PRIVATE KEY-----
+PRIVATE_KEY=-----BEGIN RSA PRIVATE KEY-----
  example
  example
  -----END RSA PRIVATE KEY-----
