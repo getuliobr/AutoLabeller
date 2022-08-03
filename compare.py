@@ -1,84 +1,79 @@
-from cmath import nan
 from tkinter import SEPARATOR
 from octokit import Octokit
 
-import hmac, json, re
+import json, csv
 from config import config
-from database import Connection
 
 import numpy as np
 from compareAlgorithms.tfidf import *
 
 
-repo = ''
 owner = ''
+repo = ''
 
-SEPARATOR = ';ç;'
+DELIMITER = ';'
+QUOTE = "'"
+
+jsonIssues = {}
+
+with open('issues.json', encoding='utf8') as f:
+  jsonIssues = json.load(f)
+
+open_issues_iterator = filter(lambda x: x['issue_data']['state'] == 'open' and not 'pull_request' in x['issue_data'], jsonIssues)
+
+open_issues = list(open_issues_iterator)
 
 octokit = Octokit(auth='installation', app_id=config['GITHUB']['APP_IDENTIFIER'], private_key=config['GITHUB']['PRIVATE_KEY'])
 
-data = octokit.search.issues_and_pull_requests(q=f'repo:{repo}/{owner} state:open is:issue', per_page=100).json
-issuesList = data['items']
+data = octokit.search.issues_and_pull_requests(q=f'repo:{repo}/{owner} state:closed linked:pr is:issue', per_page=100).json
+closed_linked_issues = data['items']
+
 total = data['total_count']
+total = total if total <= 1000 else 1000
 
 page = 2
-while len(issuesList) != total:
-  data = octokit.search.issues_and_pull_requests(q=f'repo:{repo}/{owner} state:open is:issue', per_page=100, page=page).json
+while len(closed_linked_issues) < total:
+  data = octokit.search.issues_and_pull_requests(q=f'repo:{repo}/{owner} state:closed linked:pr is:issue', per_page=100, page=page).json
   try:
-    issuesList.extend(data['items'])
+    closed_linked_issues.extend(data['items'])
     page += 1
   except:
     break
 
-db = Connection()
-
-sql = f"select issue_id, issue_number, repo, owner, title from issues where title is not null and deleted_at is null"
-issues_data = db.read(sql)
-corpus = list(map(lambda x: str(x[4]), issues_data))
-
-
+corpus = list(map(lambda x: x['title'], closed_linked_issues))
 last = len(corpus)
-
-
 corpus.append(None)
-medianOfMedians = []
 
-with open('out.csv','w+', encoding="utf-8") as f:
+with open('out.csv','w+', encoding="utf-8", newline='') as f:
+  writer = csv.writer(f, delimiter=DELIMITER, quotechar=QUOTE, quoting=csv.QUOTE_ALL)
+
   topN = 3
-  column = [0 for _ in range(topN)]
   
-  f.write(f'open-title{SEPARATOR}open-number')
-  for i in range(topN):
-    f.write(f'{SEPARATOR}open-title-top{i+1}{SEPARATOR}open-number-top{i+1}')
-  f.write('\n')
+  header = ['open-title','open-number']
 
-  for issue in issuesList:
+  for i in range(topN):
+    header.extend([f'closed-title-top{i+1}', f'closed-number-top{i+1}', f'closed-similarity-top{i+1}'])
+
+  writer.writerow(header)
+
+  for issue in open_issues:
+    issue = issue['issue_data']
     title = issue['title']
     open_issue_number = issue['number']
     corpus[last] = title
 
     arr = lemmatization(corpus)
 
-    f.write(f'{title}{SEPARATOR}{open_issue_number}')
-    median = []
+    data = [title, open_issue_number]
+
     for i in range(topN):
       result_idx = np.nanargmax(arr[last])
-      close_number = str(issues_data[result_idx][1])
-      most_similar_title = corpus[result_idx]
+      similar_close_number = str(closed_linked_issues[result_idx]['number'])
+      similar_title = corpus[result_idx]
       similarity = arr[last][result_idx]
-      if(similarity > 0.5):
-        median.append(similarity)
-        similarity = f"'{similarity}"
-        f.write(f'{SEPARATOR}{most_similar_title}{SEPARATOR}{similarity}')
-        column[i] += 1
-      else:
-        f.write(f'{SEPARATOR}-{SEPARATOR}0')
+
+      data.extend([similar_title, similar_close_number, similarity])
 
       arr[last][result_idx] = -1
-    f.write('\n')
-    if(len(median)):
-      medianOfMedians.append(np.median(median))
-  f.write(f"Mediana das medianas{SEPARATOR}'{np.median(medianOfMedians)}")
-  for i in range(topN):
-    f.write(f"{SEPARATOR}Top {i+1}{SEPARATOR}{column[i]}")
-  f.write('\n')
+
+    writer.writerow(data)
