@@ -55,7 +55,7 @@ def event_handler():
   repo = git_connection.get_repo(f"{owner}/{repo_name}")
   issue = repo.get_issue(number=issue_number)
 
-  if action == 'opened':
+  if action == 'opened' and 'issue' in payload:
     try:
       #FIXME: fix no suggestion when nothing is similar
       sql = f"insert into issues(issue_id, issue_number, repo, \"owner\", title, author, body, status, created_at) values (%s, %s, %s, %s, %s, %s, %s, 'open', current_timestamp)"
@@ -76,6 +76,7 @@ def event_handler():
         input_idx = issues_titles.index(title)
         result_idx = np.nanargmax(arr[input_idx])
 
+        print('similarity:', arr[input_idx][result_idx])
         issue_data = issues_data[result_idx]
 
         near_issue_id, near_issue_number, near_repo, near_owner, near_title = issue_data
