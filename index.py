@@ -7,6 +7,8 @@ import hmac
 from config import config
 from database import Connection
 
+from compareAlgorithms.tfidf import lemmatization
+
 from sklearn.feature_extraction.text import TfidfVectorizer
 import numpy as np  
 
@@ -67,13 +69,8 @@ def event_handler():
         issues_data = db.read(sql)
         issues_titles = list(map(lambda x: str(x[4]), issues_data))
 
-
-        # https://stackoverflow.com/questions/8897593/how-to-compute-the-similarity-between-two-text-documents
-        tfidf = TfidfVectorizer().fit_transform(issues_titles)
-        pairwise_similarity = tfidf * tfidf.T
-
-        arr = pairwise_similarity.toarray()
-        np.fill_diagonal(arr, np.nan)
+        arr = lemmatization(issues_titles)
+        
         input_idx = issues_titles.index(title)
         result_idx = np.nanargmax(arr[input_idx])
 
