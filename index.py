@@ -3,7 +3,7 @@ from unittest import result
 from github import Github, GithubIntegration
 
 from flask import Flask, request, abort
-import hmac, json
+import hmac
 from config import config
 from database import Connection
 
@@ -66,6 +66,7 @@ def event_handler():
         sql = f"select issue_id, issue_number, repo, owner, title from issues where title is not null and deleted_at is null"
         issues_data = db.read(sql)
         issues_titles = list(map(lambda x: str(x[4]), issues_data))
+
 
         # https://stackoverflow.com/questions/8897593/how-to-compute-the-similarity-between-two-text-documents
         tfidf = TfidfVectorizer().fit_transform(issues_titles)
