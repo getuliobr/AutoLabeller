@@ -18,13 +18,17 @@ class Connection():
       self.db.commit()
       return True
     except Exception as e:
+      print(e)
       self.db.rollback()
       return False
 
-  def read(self, sql):
+  def read(self, sql, values = None):
     try:
       cur = self.db.cursor()
-      cur.execute(sql)
+      if values:
+        cur.execute(sql, values)
+      else:
+        cur.execute(sql)
       return cur.fetchall()
     except:
       return None
