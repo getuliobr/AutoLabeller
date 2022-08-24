@@ -80,7 +80,7 @@ def event_handler():
       except:
         return abort(500)
     # Check if it mentions another pr or issue
-    elif body:
+    if body and action != 'deleted':
       regex = r"#([0-9]+)"
       issues = re.findall(regex, body)
       if len(issues):
