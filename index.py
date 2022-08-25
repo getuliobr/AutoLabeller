@@ -1,5 +1,3 @@
-from asyncio.windows_events import NULL
-from unittest import result
 from github import Github, GithubIntegration
 
 from flask import Flask, request, abort
@@ -10,7 +8,6 @@ import re
 
 from compareAlgorithms.tfidf import lemmatization
 
-from sklearn.feature_extraction.text import TfidfVectorizer
 import numpy as np  
 
 app = Flask(__name__)
