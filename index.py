@@ -9,6 +9,7 @@ import re
 from compareAlgorithms.tfidf import lemmatization
 from compareAlgorithms.yake import yake
 from compareAlgorithms.word2vec import word2vec
+from compareAlgorithms.sbert import sbert
 
 import numpy as np  
 
@@ -147,8 +148,13 @@ def event_handler():
           max_w2v = list(map(lambda x: f'Numero {x[0]} no {x[1]}/{x[2]}, titulo: "{x[3]}" similaridade: {x[4]}', ordered_w2v[:5]))
           max_w2v = '\n'.join(max_w2v)
 
+          sb = sbert(issues_data, title)
+          ordered_sb = sorted(sb, key=lambda x: x[4], reverse=True)
+          max_sb = list(map(lambda x: f'Numero {x[0]} no {x[1]}/{x[2]}, titulo: "{x[3]}" similaridade: {x[4]}', ordered_sb[:5]))
+          max_sb = '\n'.join(max_sb)
+
           issue.add_to_labels("needs-response")
-          issue.create_comment(f"Titulo mais parecido: {near_title}\nNo repositorio {near_repo} o issue tem o numero: {near_issue_number}\nPalavras mais relevantes de acordo com o yake: {max_keywords}\nTitulos mais similares de acordo com word2vector:\n{max_w2v}")
+          issue.create_comment(f"Titulo mais parecido: {near_title}\nNo repositorio {near_repo} o issue tem o numero: {near_issue_number}\nPalavras mais relevantes de acordo com o yake: {max_keywords}\nTitulos mais similares de acordo com word2vector:\n{max_w2v}\nTitulos mais similares de acordo com sbert:\n{max_sb}:\n")
       except Exception as e:
         print(e)
         return abort(500)
