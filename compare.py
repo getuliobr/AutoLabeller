@@ -1,4 +1,3 @@
-from tkinter import SEPARATOR
 from octokit import Octokit
 
 import json, csv
