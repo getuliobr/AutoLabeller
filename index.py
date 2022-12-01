@@ -7,6 +7,8 @@ from database import Connection
 import re
 
 from compareAlgorithms.tfidf import lemmatization
+from compareAlgorithms.yake import yake
+from compareAlgorithms.word2vec import word2vec
 
 import numpy as np  
 
@@ -113,23 +115,40 @@ def event_handler():
         sql = f"insert into issues(issue_id, issue_number, repo, \"owner\", title, author, body, status, created_at) values (%s, %s, %s, %s, %s, %s, %s, %s, current_timestamp)"
         values = (issue_id, issue_number, repo_name, owner, title, author, body, state,)
         db.write(sql, values)
-
         if title:
           sql = f"select issue_id, issue_number, repo, owner, title from issues where title is not null and deleted_at is null"
           issues_data = db.read(sql)
           issues_titles = list(map(lambda x: str(x[4]), issues_data))
 
+          input_idx = None
+          for idx, issue_title in enumerate(issues_titles):
+            if issue_title == title:
+              input_idx = idx
+              break
+
+          if input_idx is None:
+            return abort(500)
+
           arr = lemmatization(issues_titles)
-          
-          input_idx = issues_titles.index(title)
           result_idx = np.nanargmax(arr[input_idx])
 
           issue_data = issues_data[result_idx]
 
           near_issue_id, near_issue_number, near_repo, near_owner, near_title = issue_data
 
+          keywords = yake(title)
+          ordered_keywords = sorted(keywords, key=lambda x: x[1], reverse=True)
+          max_keywords = list(map(lambda x: f'{x[0]}: {x[1]}', ordered_keywords[:5]))
+
+          max_keywords = ', '.join(max_keywords)
+
+          w2v = word2vec(issues_data, title)
+          ordered_w2v = sorted(w2v, key=lambda x: x[4], reverse=True)
+          max_w2v = list(map(lambda x: f'Numero {x[0]} no {x[1]}/{x[2]}, titulo: "{x[3]}" similaridade: {x[4]}', ordered_w2v[:5]))
+          max_w2v = '\n'.join(max_w2v)
+
           issue.add_to_labels("needs-response")
-          issue.create_comment(f"Titulo mais parecido: {near_title}\nNo repositorio {near_repo} o issue tem o numero: {near_issue_number}")
+          issue.create_comment(f"Titulo mais parecido: {near_title}\nNo repositorio {near_repo} o issue tem o numero: {near_issue_number}\nPalavras mais relevantes de acordo com o yake: {max_keywords}\nTitulos mais similares de acordo com word2vector:\n{max_w2v}")
       except Exception as e:
         print(e)
         return abort(500)
