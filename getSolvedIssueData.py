@@ -49,10 +49,12 @@ for issue in issuesList:
     print(f"Getting pull request {pr} files")
     fetchedAll = False
     filesInThisPR = []
+    page = 1
     while not fetchedAll and len(filesInThisPR) < 3000:
-      files = octokit.pulls.list_files(owner=owner, repo=repo, pull_number=pr.split('/')[-1], per_page=100).json
+      files = octokit.pulls.list_files(owner=owner, repo=repo, pull_number=pr.split('/')[-1], page=page, per_page=100).json
       if len(files) < 100:
         fetchedAll = True
+      page += 1
       filesInThisPR.extend(list(map(lambda x: x['filename'], files)))
     filesSolvingThisIssue.extend(filesInThisPR)
   
