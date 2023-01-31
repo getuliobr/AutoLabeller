@@ -17,7 +17,7 @@ owner = ''
 
 octokit = Octokit(auth='installation', app_id=config['GITHUB']['APP_IDENTIFIER'], private_key=config['GITHUB']['PRIVATE_KEY'])
 
-data = octokit.search.issues_and_pull_requests(q=f'repo:{repo}/{owner} state:closed linked:pr is:issue', per_page=100).json
+data = octokit.search.issues_and_pull_requests(q=f'repo:{owner}/{repo} state:closed linked:pr is:issue', per_page=100).json
 issuesList = data['items']
 total = data['total_count']
 print(f"Total issues: {total}")
@@ -25,7 +25,7 @@ print(f"Total issues: {total}")
 page = 2
 while len(issuesList) != total:
   print(f"Page: {page} - {len(issuesList)}/{total}")
-  data = octokit.search.issues_and_pull_requests(q=f'repo:{repo}/{owner} state:closed linked:pr is:issue', per_page=100, page=page).json
+  data = octokit.search.issues_and_pull_requests(q=f'repo:{owner}/{repo} state:closed linked:pr is:issue', per_page=100, page=page).json
   try:
     issuesList.extend(data['items'])
     page += 1
