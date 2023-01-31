@@ -4,8 +4,8 @@ import hmac, json, re
 from config import config
 from database import Connection
 
-repo = ''
-owner = ''
+owner = config['DATAMINING']['OWNER']
+repo = config['DATAMINING']['REPO']
 
 octokit = Octokit(auth='installation', app_id=config['GITHUB']['APP_IDENTIFIER'], private_key=config['GITHUB']['PRIVATE_KEY'])
 

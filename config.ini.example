@@ -12,3 +12,7 @@ PORT=5432
 DB=autolabeller
 USER=example
 PASSWORD=example
+
+[DATAMINING]
+OWNER=getuliobr
+REPO=autolabeller

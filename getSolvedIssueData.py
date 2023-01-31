@@ -12,8 +12,8 @@ from octokit import Octokit
 from config import config
 import re
 
-repo = ''
-owner = ''
+owner = config['DATAMINING']['OWNER']
+repo = config['DATAMINING']['REPO']
 
 octokit = Octokit(auth='installation', app_id=config['GITHUB']['APP_IDENTIFIER'], private_key=config['GITHUB']['PRIVATE_KEY'])
 
