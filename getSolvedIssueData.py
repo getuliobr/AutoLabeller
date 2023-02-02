@@ -60,5 +60,5 @@ for issue in issuesList:
   
   filesThatSolveIssue[issue['title']] = filesSolvingThisIssue
 
-with open('filesThatSolveIssue.json', 'w+', encoding="utf-8") as f:
+with open('./data/filesThatSolveIssue.json', 'w+', encoding="utf-8") as f:
   f.write(json.dumps(filesThatSolveIssue))
