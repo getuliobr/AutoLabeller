@@ -4,3 +4,4 @@ __pycache__/
 out.csv
 issues.json
 titles.txt
+data/
