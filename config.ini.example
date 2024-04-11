@@ -7,12 +7,5 @@ APP_IDENTIFIER=example
 WEBHOOK_SECRET=example
 
 [DATABASE]
-HOST=localhost
-PORT=5432
-DB=autolabeller
-USER=example
-PASSWORD=example
-
-[DATAMINING]
-OWNER=getuliobr
-REPO=autolabeller
+CONNECTION_STRING=mongodb://localhost:27017/
+NAME=evaluator
