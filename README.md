@@ -1,2 +1,2 @@
-# AutoLabeller
-Source code to a GitHub app auto labeller
+# Censurado para anonimização
+Censurado para anonimização
