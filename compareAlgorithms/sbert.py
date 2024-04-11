@@ -1,21 +1,40 @@
+import pickle
 from sentence_transformers import SentenceTransformer, util
+from bson.binary import Binary
 
+sbertModel = SentenceTransformer('all-MiniLM-L6-v2')
 
-def sbert(issues_data: list, currentTitle: str):
-  numberOfSimilarissueTitles = 5
+def get_sbert_embeddings(issue):
+  title_body = issue["filtered"]
+  
+  encode = lambda x: Binary(pickle.dumps(sbertModel.encode(x)))
+  
+  return encode(title_body)
 
+def sbert(issuesTitles: list, currentTitle: str):
   mostSimilarIssueTitles = []
 
-  model = SentenceTransformer('all-MiniLM-L6-v2')
+  currentTitleEmbedding = pickle.loads(currentTitle)
 
-  currentTitleEmbedding = model.encode(currentTitle)
-
-  for issue in issues_data:
-    _id, number, repo, owner, similarTitle = issue
+  for number, similarTitle in issuesTitles:
     if currentTitle == similarTitle:
       continue
-    similarTitleEmbedding = model.encode(similarTitle)
-    similarity = util.pytorch_cos_sim(currentTitleEmbedding, similarTitleEmbedding)
-    mostSimilarIssueTitles.append((number, repo, owner, similarTitle, similarity))
+
+    similarTitleEmbedding = pickle.loads(similarTitle)
+    similarity = util.pytorch_cos_sim(currentTitleEmbedding, similarTitleEmbedding).numpy()[0]
+    similarity = float(similarity[0])
+    
+    mostSimilarIssueTitles.append((number, similarity))
 
   return mostSimilarIssueTitles
+
+def getMostSimilar(currIssue, corpus):
+  print('sbert', corpus[currIssue]['sbert'])
+  currIssueCompareData = corpus[currIssue]['sbert']
+
+  corpus = [(issue_number, corpus[issue_number]['sbert']) for issue_number in corpus]
+
+  sb = sbert(corpus, currIssueCompareData)
+  ordered = sorted(sb, key=lambda x: x[1], reverse=True)
+  print(ordered)         
+  return ordered[0]
