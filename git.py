@@ -11,8 +11,8 @@ git_integration = GithubIntegration(
 
 def get_token(owner, repo):
   return git_integration.get_access_token(
-        git_integration.get_installation(owner, repo).id
-      ).token
+    git_integration.get_installation(owner, repo).id
+  ).token
   
 def get_connection(owner, repo):
   return Github(
