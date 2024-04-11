@@ -41,7 +41,6 @@ def insert_issues(db, issues):
 def event_handler():
   payload = request.json
   action = payload['action']
-
     
   if (action == 'added' and 'repositories_added' in payload) or (action == 'created' and 'repositories' in payload):
     print(action)
