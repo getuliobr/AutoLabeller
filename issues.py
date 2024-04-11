@@ -15,63 +15,10 @@ def query(q, owner, repo):
         }
     ).json()
 
-def get_closed_issue_with_linked_pr(owner, repo, date='2000-01-01T00:00:00Z', first = 49):
-    # tem um outro jeito de achar o pr que fechou a issue por meio do evento closed e olhar no campo state-reason se for completed tem como achar o pr
+def get_closed_issue_with_linked_pr(owner, repo, date='2000-01-01T00:00:00Z', first = 49, orderBy='created'):
     buildQuery = lambda date: f'''
     query {{
-        search(query: "repo:{owner}/{repo} is:issue state:closed linked:pr created:>{date} sort:created-asc", type: ISSUE, first: {first}) {{
-        edges {{
-            node {{
-            ... on Issue {{
-                number
-                state
-                title
-                body
-                labels(first: 100) {{
-                    nodes {{
-                        name
-                    }}
-                }}
-                closedAt
-                createdAt
-                timelineItems(first: 100) {{
-                    nodes {{
-                        ... on CrossReferencedEvent {{
-                            willCloseTarget
-                            source {{
-                                ... on PullRequest {{
-                                    number
-                                    title
-                                    state
-                                    createdAt
-                                    closedAt
-                                    mergedAt
-                                    files(first: 100) {{
-                                        nodes {{
-                                        ... on PullRequestChangedFile {{
-                                            path
-                                        }}
-                                        }}
-                                    }}
-                                }}
-                            }}
-                        }}
-                    }}
-                }}
-            }}
-            }}
-        }}
-        }}
-        rateLimit {{
-            cost
-            remaining
-            resetAt
-        }}
-    }}'''
-    ## QUERY NOVA QUE PEGA SO O EVENTO DE FECHAMENTO
-    buildQuery = lambda date: f'''
-    query {{
-        search(query: "repo:{owner}/{repo} is:issue state:closed linked:pr created:>{date} sort:created-asc", type: ISSUE, first: {first}) {{
+        search(query: "repo:{owner}/{repo} is:issue state:closed linked:pr {orderBy}:>{date} sort:{orderBy}-asc", type: ISSUE, first: {first}) {{
         edges {{
             node {{
             ... on Issue {{
@@ -280,3 +227,8 @@ def get_project_data(project):
     forks = data['forks']['totalCount']
     language = data['languages']['nodes'][0]['name']
     return contributors, stars, forks, language
+
+
+def get_issue_by_closed(owner, repo, closed_at):
+    issue = get_closed_issue_with_linked_pr(owner, repo, closed_at, orderBy='closed')
+    return list(map(clean_up(), issue))
