@@ -1,13 +1,11 @@
-from github import Github, GithubIntegration
-
-from git import get_connection, git_integration, get_token
+from git import get_connection
 
 from flask import Flask, request, abort
 import hmac
 from config import config
 
 from datetime import datetime, timedelta
-from issues import get_issues
+from issues import get_issues, get_issue_by_closed
 
 from compareAlgorithms.sbert import get_sbert_embeddings, getMostSimilar
 from compareAlgorithms.filtered import get_filtered
@@ -35,6 +33,10 @@ def verify_webhook_signature():
   if not hmac.compare_digest(their_digest, our_digest):
     return abort(401)
 
+def insert_issues(db, issues):
+  for issue in issues:
+    db.update_one({'number': issue['number']}, {'$set': issue}, upsert=True)
+
 @app.route('/event_handler', methods=['POST'])
 def event_handler():
   payload = request.json
@@ -47,12 +49,22 @@ def event_handler():
     closedDate = datetime.now() - timedelta(days=180)
     closedDate = closedDate.isoformat()
     for repo in repositories:
-      repo = repo['full_name']
-      owner, repo = repo.split('/')
-      db[repo].insert_many(get_issues(owner, repo, date=closedDate))
+      repoFullname = repo['full_name']
+      owner, repo = repoFullname.split('/')
+      issues = get_issues(owner, repo, date=closedDate)
+      insert_issues(db[repoFullname], issues)
       
-  # if 'issue' in payload and action == 'opened':
-    # insert_issue(payload['issue'])
+  if 'issue' in payload and action == 'closed':
+    repoFullname = payload['repository']['full_name']
+    owner, repo = repoFullname.split('/')
+    issue = payload['issue']    
+    closedDate = issue['closed_at']
+    
+    closedDate = datetime.strptime(closedDate, '%Y-%m-%dT%H:%M:%S%z') - timedelta(seconds=1)
+    
+    if issue['state_reason'] == 'completed':
+      issues = get_issue_by_closed(owner, repo, closed_at=closedDate.isoformat())
+      insert_issues(db[repoFullname], issues)
     
   if 'issue' in payload and action == 'labeled':
     label = payload['label']
@@ -76,23 +88,24 @@ def event_handler():
     formatQuery = {
       'closed_at': {
         '$lte': issue['created_at'],
-        '$gte': daysBefore.strftime('%Y-%m-%d')
+        '$gte': daysBefore.isoformat()
       },
       'files.0': {'$exists': True},
     }
     
-    issuesClosedBeforeCursor = db[full_repo].find(formatQuery, no_cursor_timeout=True).sort('number', DESCENDING)
-    corpus = {issue['number']: issue for issue in issuesClosedBeforeCursor}
-    issuesClosedBeforeCursor.close()
+    corpus = {
+      _issue['number']: _issue for _issue in db[full_repo].find(formatQuery).sort('number', DESCENDING)
+    }
+    
     issue['filtered'] = get_filtered(issue)
     issue['sbert'] = get_sbert_embeddings(issue)
     corpus[number] = issue
     
-    print(getMostSimilar(number, corpus))
-  #   issue = repo.get_issue(number=issue_number)
+    recNumber, similarity = getMostSimilar(number, corpus)
     
-  #   issue.add_to_labels("needs-response")
-  #   issue.create_comment(f"Teste\n")
+    issue = repo.get_issue(number=number)
+    comment = f'To solve this issue, look at this recommendation:\n - https://github.com/{full_repo}/issues/{recNumber} similarity: {(similarity)*100:.2f}'
+    issue.create_comment(comment)
     
   return {'success': True}
 

@@ -3,7 +3,6 @@ from nltk.tokenize import word_tokenize
 import re
 from string import digits
 
-
 def toLowercase(data):
     return data.lower()
 
