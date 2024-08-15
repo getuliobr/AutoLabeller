@@ -12,7 +12,7 @@ This GitHub bot is used to recommend solved issues for GFIs, so that new develop
 pip install -r requirements.txt
 ```
 
-3. Set up config.ini following the example in the file [config.ini.example](/config.ini.example)
+3. Set up config.ini following the example at [config.ini.example](/config.ini.example)
 
 4. Run the bot
 ```
