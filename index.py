@@ -67,7 +67,7 @@ def event_handler():
     
   if 'issue' in payload and action == 'labeled':
     label = payload['label']
-    if label['name'].lower() != 'good first issue':
+    if label['name'].lower() != config['SETTINGS']['LABEL'].lower():
       return {'success': True}
     
     owner = payload['repository']['owner']['login']
