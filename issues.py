@@ -1,5 +1,4 @@
-from bs4 import BeautifulSoup
-import requests, csv, time, re
+import requests, time
 from config import config
 from git import get_token
 
